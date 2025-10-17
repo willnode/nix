@@ -39,10 +39,20 @@ feature! {
     pub use self::pivot_root::*;
 }
 
-#[cfg(any(freebsdlike, linux_android, target_os = "openbsd"))]
+#[cfg(any(
+    freebsdlike,
+    linux_android,
+    target_os = "openbsd",
+    target_os = "redox"
+))]
 pub use self::setres::*;
 
-#[cfg(any(freebsdlike, linux_android, target_os = "openbsd"))]
+#[cfg(any(
+    freebsdlike,
+    linux_android,
+    target_os = "openbsd",
+    target_os = "redox"
+))]
 pub use self::getres::*;
 
 feature! {
@@ -804,7 +814,6 @@ pub fn mkdir<P: ?Sized + NixPath>(path: &P, mode: crate::sys::stat::Mode) -> Res
 /// }
 /// ```
 #[inline]
-#[cfg(not(target_os = "redox"))] // RedoxFS does not support fifo yet
 pub fn mkfifo<P: ?Sized + NixPath>(path: &P, mode: crate::sys::stat::Mode) -> Result<()> {
     let res = path.with_nix_path(|cstr| unsafe {
         libc::mkfifo(cstr.as_ptr(), mode.bits() as libc::mode_t)
@@ -1097,7 +1106,10 @@ fn to_exec_array<S: AsRef<CStr>>(args: &[S]) -> Vec<*const c_char> {
 pub fn execv<S: AsRef<CStr>>(path: &CStr, argv: &[S]) -> Result<Infallible> {
     let args_p = to_exec_array(argv);
 
+    #[cfg(not(target_os = "redox"))]
     unsafe { libc::execv(path.as_ptr(), args_p.as_ptr()) };
+    #[cfg(target_os = "redox")]
+    unsafe { libc::execv(path.as_ptr(), args_p.as_ptr() as *const *mut i8,) };
 
     Err(Errno::last())
 }
@@ -1123,7 +1135,11 @@ pub fn execve<SA: AsRef<CStr>, SE: AsRef<CStr>>(
     let args_p = to_exec_array(args);
     let env_p = to_exec_array(env);
 
+
+    #[cfg(not(target_os = "redox"))]
     unsafe { libc::execve(path.as_ptr(), args_p.as_ptr(), env_p.as_ptr()) };
+    #[cfg(target_os = "redox")]
+    unsafe { libc::execve(path.as_ptr(), args_p.as_ptr() as *const *mut i8, env_p.as_ptr()  as *const *mut i8) };
 
     Err(Errno::last())
 }
@@ -1144,7 +1160,10 @@ pub fn execvp<S: AsRef<CStr>>(
 ) -> Result<Infallible> {
     let args_p = to_exec_array(args);
 
+    #[cfg(not(target_os = "redox"))]
     unsafe { libc::execvp(filename.as_ptr(), args_p.as_ptr()) };
+    #[cfg(target_os = "redox")]
+    unsafe { libc::execvp(filename.as_ptr(), args_p.as_ptr() as *const *mut i8) };
 
     Err(Errno::last())
 }
@@ -3210,7 +3229,12 @@ mod pivot_root {
     }
 }
 
-#[cfg(any(linux_android, freebsdlike, target_os = "openbsd"))]
+#[cfg(any(
+    linux_android,
+    freebsdlike,
+    target_os = "openbsd",
+    target_os = "redox"
+))]
 mod setres {
     feature! {
     #![feature = "user"]
@@ -3255,7 +3279,12 @@ mod setres {
     }
 }
 
-#[cfg(any(linux_android, freebsdlike, target_os = "openbsd"))]
+#[cfg(any(
+    linux_android,
+    freebsdlike,
+    target_os = "openbsd",
+    target_os = "redox"
+))]
 mod getres {
     feature! {
     #![feature = "user"]
