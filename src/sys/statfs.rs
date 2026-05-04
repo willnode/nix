@@ -60,7 +60,10 @@ type fs_type_t = libc::c_ulong;
     not(target_env = "musl")
 ))]
 type fs_type_t = libc::c_uint;
-#[cfg(all(target_os = "linux", any(target_env = "musl", target_env = "ohos")))]
+#[cfg(all(
+    target_os = "linux",
+    any(target_env = "relibc", target_env = "musl", target_env = "ohos")
+))]
 type fs_type_t = libc::c_ulong;
 #[cfg(all(target_os = "linux", target_env = "uclibc"))]
 type fs_type_t = libc::c_int;
@@ -70,6 +73,7 @@ type fs_type_t = libc::c_int;
         target_arch = "s390x",
         target_env = "musl",
         target_env = "ohos",
+        target_env = "relibc",
         target_env = "uclibc"
     ))
 ))]
@@ -291,7 +295,7 @@ pub const XENFS_SUPER_MAGIC: FsType =
 #[cfg(linux_android)]
 #[allow(missing_docs)]
 pub const NSFS_MAGIC: FsType = FsType(libc::NSFS_MAGIC as fs_type_t);
-#[cfg(all(linux_android, not(target_env = "musl"), not(target_env = "ohos")))]
+#[cfg(all(linux_android, not(target_env = "musl"), not(target_env = "ohos"), not(target_env = "relibc")))]
 #[allow(missing_docs)]
 pub const XFS_SUPER_MAGIC: FsType = FsType(libc::XFS_SUPER_MAGIC as fs_type_t);
 
@@ -339,7 +343,8 @@ impl Statfs {
     #[cfg(any(
         target_os = "android",
         all(target_os = "linux", target_env = "musl"),
-        all(target_os = "linux", target_env = "ohos")
+        all(target_os = "linux", target_env = "ohos"),
+        all(target_os = "linux", target_env = "relibc"),
     ))]
     pub fn optimal_transfer_size(&self) -> libc::c_ulong {
         self.0.f_bsize
@@ -352,6 +357,7 @@ impl Statfs {
             target_arch = "s390x",
             target_env = "musl",
             target_env = "ohos",
+            target_env = "relibc",
             target_env = "uclibc"
         ))
     ))]
@@ -410,6 +416,13 @@ impl Statfs {
 
     /// Size of a block
     // f_bsize on linux: https://github.com/torvalds/linux/blob/master/fs/nfs/super.c#L471
+    #[cfg(all(target_os = "linux", target_env = "relibc"))]
+    pub fn block_size(&self) -> libc::c_ulong {
+        self.0.f_bsize
+    }
+
+    /// Size of a block
+    // f_bsize on linux: https://github.com/torvalds/linux/blob/master/fs/nfs/super.c#L471
     #[cfg(all(target_os = "linux", target_env = "uclibc"))]
     pub fn block_size(&self) -> libc::c_int {
         self.0.f_bsize
@@ -423,6 +436,7 @@ impl Statfs {
             target_arch = "s390x",
             target_env = "musl",
             target_env = "ohos",
+            target_env = "relibc",
             target_env = "uclibc"
         ))
     ))]
@@ -486,6 +500,12 @@ impl Statfs {
     }
 
     /// Maximum length of filenames
+    #[cfg(all(target_os = "linux", target_env = "relibc"))]
+    pub fn maximum_name_length(&self) -> libc::c_ulong {
+        self.0.f_namelen
+    }
+
+    /// Maximum length of filenames
     #[cfg(all(target_os = "linux", target_env = "uclibc"))]
     pub fn maximum_name_length(&self) -> libc::c_int {
         self.0.f_namelen
@@ -498,6 +518,7 @@ impl Statfs {
             target_arch = "s390x",
             target_env = "musl",
             target_env = "ohos",
+            target_env = "relibc",
             target_env = "uclibc"
         ))
     ))]
